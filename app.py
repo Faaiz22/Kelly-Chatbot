@@ -5,10 +5,6 @@ from datetime import datetime
 import json
 import sys
 import os
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
 
 # Add the package to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -73,6 +69,13 @@ st.markdown("""
         background-color: #FEE2E2;
         color: #991B1B;
     }
+    .info-box {
+        background-color: #EFF6FF;
+        border-left: 4px solid #3B82F6;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin: 0.5rem 0;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -81,18 +84,80 @@ st.markdown("""
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 
-if 'kelly' not in st.session_state:
-    st.session_state.kelly = KellyScientist()
+if 'api_key' not in st.session_state:
+    st.session_state.api_key = ""
 
-if 'api_provider' not in st.session_state:
-    st.session_state.api_provider = "groq"
+if 'kelly' not in st.session_state:
+    st.session_state.kelly = None
 
 # Header
 st.markdown('<div class="main-header">🤖 Kelly - The Skeptical AI Scientist</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">Where every answer is a poem, and every claim is questioned (now powered by LLMs!)</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-header">Where every answer is a poem, and every claim is questioned (powered by Groq LLM!)</div>', unsafe_allow_html=True)
 
 # Sidebar
 with st.sidebar:
+    st.header("🔑 API Configuration")
+    
+    # Info box about Groq
+    st.markdown("""
+    <div class="info-box">
+        <strong>📘 Get Your Free Groq API Key:</strong><br>
+        1. Visit <a href="https://console.groq.com" target="_blank">console.groq.com</a><br>
+        2. Sign up (free, no credit card needed)<br>
+        3. Go to API Keys section<br>
+        4. Create a new key and paste it below
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # API Key input
+    api_key_input = st.text_input(
+        "Groq API Key",
+        value=st.session_state.api_key,
+        type="password",
+        placeholder="gsk_...",
+        help="Enter your Groq API key. It will be stored only for this session."
+    )
+    
+    # Update API key
+    if api_key_input != st.session_state.api_key:
+        st.session_state.api_key = api_key_input
+        if api_key_input:
+            st.session_state.kelly = KellyScientist(
+                api_key=api_key_input,
+                api_provider="groq"
+            )
+    
+    # Show API status
+    if st.session_state.api_key:
+        st.markdown('<div class="api-status active">✅ API Key Set</div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="api-status inactive">❌ No API Key - Using Fallback Mode</div>', unsafe_allow_html=True)
+        st.warning("⚠️ Without an API key, Kelly will use basic template responses.")
+    
+    # Model selection
+    if st.session_state.api_key:
+        st.subheader("Model Settings")
+        selected_model = st.selectbox(
+            "Choose Model",
+            [
+                "llama-3.1-70b-versatile",
+                "llama-3.1-8b-instant",
+                "mixtral-8x7b-32768",
+                "gemma2-9b-it"
+            ],
+            help="Llama 70B is smartest but slower. 8B is fastest."
+        )
+        
+        if st.button("🔄 Update Model"):
+            st.session_state.kelly = KellyScientist(
+                api_key=st.session_state.api_key,
+                api_provider="groq",
+                model=selected_model
+            )
+            st.success(f"Updated to {selected_model}")
+    
+    st.divider()
+    
     st.header("About Kelly")
     st.write("""
     **Kelly** is an AI scientist chatbot who responds to questions about artificial intelligence 
@@ -103,85 +168,8 @@ with st.sidebar:
     - 🎭 **Professionally poetic**
     - ⚠️ **Highlighting AI limitations**
     
-    Now powered by **LLM APIs** for dynamic, context-aware responses!
+    Powered by **Groq's LLM API** for dynamic, context-aware responses!
     """)
-    
-    st.divider()
-    
-    # API Configuration
-    st.header("🔧 API Settings")
-    
-    # Check for API keys
-    has_groq = bool(os.getenv("GROQ_API_KEY"))
-    has_hf = bool(os.getenv("HUGGINGFACE_API_KEY"))
-    has_together = bool(os.getenv("TOGETHER_API_KEY"))
-    has_openai = bool(os.getenv("OPENAI_API_KEY"))
-    
-    # API Provider Selection
-    provider_options = []
-    if has_groq:
-        provider_options.append("groq")
-    if has_hf:
-        provider_options.append("huggingface")
-    if has_together:
-        provider_options.append("together")
-    if has_openai:
-        provider_options.append("openai")
-    
-    if not provider_options:
-        st.error("⚠️ No API keys found! Please set at least one API key.")
-        st.info("Set environment variable:\n- GROQ_API_KEY\n- HUGGINGFACE_API_KEY\n- TOGETHER_API_KEY\n- OPENAI_API_KEY")
-        provider_options = ["groq"]  # Default fallback
-    
-    selected_provider = st.selectbox(
-        "API Provider",
-        provider_options,
-        index=0,
-        help="Select which LLM API to use"
-    )
-    
-    # Show API status
-    status_class = "active" if selected_provider in [p for p in ["groq", "huggingface", "together", "openai"] if eval(f"has_{p.replace('openai', 'openai')}")] else "inactive"
-    status_text = "✅ API Key Found" if status_class == "active" else "❌ No API Key"
-    st.markdown(f'<div class="api-status {status_class}">{status_text}</div>', unsafe_allow_html=True)
-    
-    # Model selection based on provider
-    model_options = {
-        "groq": [
-            "llama-3.1-70b-versatile",
-            "llama-3.1-8b-instant",
-            "mixtral-8x7b-32768",
-            "gemma2-9b-it"
-        ],
-        "huggingface": [
-            "meta-llama/Llama-2-70b-chat-hf",
-            "mistralai/Mixtral-8x7B-Instruct-v0.1",
-            "microsoft/phi-2"
-        ],
-        "together": [
-            "meta-llama/Llama-3-70b-chat-hf",
-            "mistralai/Mixtral-8x7B-Instruct-v0.1",
-            "NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO"
-        ],
-        "openai": [
-            "gpt-4",
-            "gpt-3.5-turbo"
-        ]
-    }
-    
-    selected_model = st.selectbox(
-        "Model",
-        model_options.get(selected_provider, ["default"]),
-        help="Select which model to use"
-    )
-    
-    if st.button("🔄 Update API Settings"):
-        st.session_state.kelly = KellyScientist(
-            api_provider=selected_provider,
-            model=selected_model
-        )
-        st.session_state.api_provider = selected_provider
-        st.success(f"Updated to {selected_provider} with {selected_model}")
     
     st.divider()
     
@@ -209,11 +197,18 @@ with st.sidebar:
     lines_per_stanza = st.slider("Lines per stanza", 3, 6, 4)
     
     if st.button("Update Structure"):
-        st.session_state.kelly = KellyScientist(
-            stanzas=stanzas,
-            lines_per_stanza=lines_per_stanza,
-            api_provider=st.session_state.api_provider
-        )
+        if st.session_state.api_key:
+            st.session_state.kelly = KellyScientist(
+                stanzas=stanzas,
+                lines_per_stanza=lines_per_stanza,
+                api_key=st.session_state.api_key,
+                api_provider="groq"
+            )
+        else:
+            st.session_state.kelly = KellyScientist(
+                stanzas=stanzas,
+                lines_per_stanza=lines_per_stanza
+            )
         st.success("Poem structure updated!")
     
     st.divider()
@@ -257,6 +252,10 @@ with st.sidebar:
 # Main chat interface
 st.header("Chat with Kelly")
 
+# Show warning if no API key
+if not st.session_state.api_key:
+    st.info("💡 **Tip:** Add your Groq API key in the sidebar to get dynamic AI-generated poems! Without it, Kelly uses basic templates.")
+
 # Display chat history
 for i, message in enumerate(st.session_state.chat_history):
     if message['role'] == 'user':
@@ -274,13 +273,13 @@ user_question = st.text_input(
     key="user_input"
 )
 
-col1, col2, col3 = st.columns([2, 1, 1])
+col1, col2 = st.columns([3, 1])
 
 with col1:
     send_button = st.button("🚀 Send Question", type="primary", use_container_width=True)
 
 with col2:
-    clear_input = st.button("🔄 Clear Input", use_container_width=True)
+    clear_input = st.button("🔄 Clear", use_container_width=True)
 
 # Handle button clicks
 if clear_input:
@@ -296,12 +295,23 @@ if send_button and user_question:
         "timestamp": datetime.now().isoformat()
     })
     
-    # Generate Kelly's response using the LLM
-    with st.spinner(f"Kelly is composing her poetic response using {st.session_state.api_provider}..."):
+    # Initialize Kelly if not already done
+    if st.session_state.kelly is None:
+        if st.session_state.api_key:
+            st.session_state.kelly = KellyScientist(
+                api_key=st.session_state.api_key,
+                api_provider="groq"
+            )
+        else:
+            st.session_state.kelly = KellyScientist()
+    
+    # Generate Kelly's response
+    with st.spinner("Kelly is composing her poetic response..."):
         try:
             response = st.session_state.kelly.generate(user_question)
         except Exception as e:
-            response = f"Error generating response: {str(e)}\n\nPlease check your API key and try again."
+            response = f"⚠️ Error generating response: {str(e)}\n\nPlease check your API key and try again."
+            st.error(f"Error: {str(e)}")
     
     # Add Kelly's response to history
     st.session_state.chat_history.append({
@@ -323,9 +333,10 @@ st.markdown("""
 <div style='text-align: center; color: #64748B; font-size: 0.9rem;'>
     <p>💡 <strong>Remember:</strong> Kelly's responses are skeptical by design. She questions broad claims 
     and highlights limitations to encourage critical thinking about AI technology.</p>
-    <p>🤖 <strong>Technical Note:</strong> Kelly now uses LLM APIs (Groq, Hugging Face, Together AI, or OpenAI) 
-    to generate dynamic, context-aware poetic responses while maintaining her analytical voice.</p>
-    <p>⚡ <strong>Recommended:</strong> Use Groq for the fastest free responses!</p>
+    <p>🤖 <strong>Technical Note:</strong> Kelly uses Groq's LLM API to generate dynamic, context-aware 
+    poetic responses while maintaining her analytical voice.</p>
+    <p>⚡ <strong>Free & Fast:</strong> Groq offers generous free tier with lightning-fast responses!</p>
+    <p>🔒 <strong>Privacy:</strong> Your API key is stored only in your browser session and never logged.</p>
     <p>Built with ❤️ using Streamlit | © 2025 Kelly AI Scientist Chatbot</p>
 </div>
 """, unsafe_allow_html=True)
