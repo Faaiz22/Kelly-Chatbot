@@ -1,14 +1,13 @@
 """
 Kelly — AI Scientist Chatbot (LLM-Powered Version)
 
-Now uses free LLM APIs to generate dynamic, context-aware poetic responses
+Now uses Groq's free LLM API to generate dynamic, context-aware poetic responses
 while maintaining Kelly's skeptical, analytical, and professional tone.
 """
 
 from dataclasses import dataclass
 from typing import Optional
 import os
-import json
 
 try:
     import requests
@@ -19,27 +18,21 @@ except ImportError:
 
 @dataclass
 class KellyScientist:
-    """LLM-powered generator for Kelly-style poems."""
+    """LLM-powered generator for Kelly-style poems using Groq API."""
     stanzas: int = 4
     lines_per_stanza: int = 4
     api_key: Optional[str] = None
-    api_provider: str = "groq"  # Options: "groq", "huggingface", "together", "openai"
-    model: str = "llama-3.1-70b-versatile"  # Default Groq model
+    api_provider: str = "groq"
+    model: str = "llama-3.1-70b-versatile"
     
     def __post_init__(self):
         """Initialize API key from environment if not provided."""
         if not self.api_key:
-            if self.api_provider == "groq":
-                self.api_key = os.getenv("GROQ_API_KEY")
-            elif self.api_provider == "huggingface":
-                self.api_key = os.getenv("HUGGINGFACE_API_KEY")
-            elif self.api_provider == "together":
-                self.api_key = os.getenv("TOGETHER_API_KEY")
-            elif self.api_provider == "openai":
-                self.api_key = os.getenv("OPENAI_API_KEY")
+            self.api_key = os.getenv("GROQ_API_KEY")
         
         if not self.api_key:
-            print(f"Warning: No API key found. Set {self.api_provider.upper()}_API_KEY environment variable.")
+            print("Warning: No Groq API key found. Kelly will use fallback template responses.")
+            print("Get a free API key at: https://console.groq.com/keys")
     
     def _get_system_prompt(self) -> str:
         """Generate the system prompt that defines Kelly's personality."""
@@ -99,66 +92,8 @@ Remember: You are skeptical by design. Question bold claims, highlight what we d
         response.raise_for_status()
         return response.json()["choices"][0]["message"]["content"]
     
-    def _call_huggingface(self, prompt: str) -> str:
-        """Call Hugging Face Inference API."""
-        url = f"https://api-inference.huggingface.co/models/{self.model}"
-        headers = {"Authorization": f"Bearer {self.api_key}"}
-        
-        full_prompt = f"{self._get_system_prompt()}\n\nUser question: {prompt}\n\nKelly's poetic response:"
-        
-        response = requests.post(
-            url,
-            headers=headers,
-            json={"inputs": full_prompt, "parameters": {"max_new_tokens": 1000, "temperature": 0.8}},
-            timeout=30
-        )
-        response.raise_for_status()
-        return response.json()[0]["generated_text"].split("Kelly's poetic response:")[-1].strip()
-    
-    def _call_together(self, prompt: str) -> str:
-        """Call Together AI API."""
-        url = "https://api.together.xyz/v1/chat/completions"
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        }
-        data = {
-            "model": self.model,
-            "messages": [
-                {"role": "system", "content": self._get_system_prompt()},
-                {"role": "user", "content": prompt}
-            ],
-            "temperature": 0.8,
-            "max_tokens": 1000
-        }
-        
-        response = requests.post(url, headers=headers, json=data, timeout=30)
-        response.raise_for_status()
-        return response.json()["choices"][0]["message"]["content"]
-    
-    def _call_openai(self, prompt: str) -> str:
-        """Call OpenAI-compatible API."""
-        url = "https://api.openai.com/v1/chat/completions"
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        }
-        data = {
-            "model": self.model,
-            "messages": [
-                {"role": "system", "content": self._get_system_prompt()},
-                {"role": "user", "content": prompt}
-            ],
-            "temperature": 0.8,
-            "max_tokens": 1000
-        }
-        
-        response = requests.post(url, headers=headers, json=data, timeout=30)
-        response.raise_for_status()
-        return response.json()["choices"][0]["message"]["content"]
-    
     def generate(self, question: str, extra_suggestions: Optional[list] = None) -> str:
-        """Generate a poetic response using LLM."""
+        """Generate a poetic response using Groq LLM."""
         if not self.api_key:
             return self._fallback_response(question)
         
@@ -168,52 +103,60 @@ Remember: You are skeptical by design. Question bold claims, highlight what we d
             prompt += f"\n\nPlease incorporate these suggestions: {', '.join(extra_suggestions)}"
         
         try:
-            if self.api_provider == "groq":
-                response = self._call_groq(prompt)
-            elif self.api_provider == "huggingface":
-                response = self._call_huggingface(prompt)
-            elif self.api_provider == "together":
-                response = self._call_together(prompt)
-            elif self.api_provider == "openai":
-                response = self._call_openai(prompt)
-            else:
-                raise ValueError(f"Unknown API provider: {self.api_provider}")
-            
+            response = self._call_groq(prompt)
             return response.strip()
         
         except Exception as e:
-            print(f"Error calling {self.api_provider} API: {e}")
+            print(f"Error calling Groq API: {e}")
             return self._fallback_response(question)
     
     def _fallback_response(self, question: str) -> str:
         """Fallback template-based response when API is unavailable."""
-        return f"""Tell me again—how sure are we of the claims you make?
-
-What evidence supports this view of artificial minds?
-Metrics measure narrow tasks, not understanding itself.
-Benchmarks capture snapshots, not the shifting world outside.
-Without context and care, we mistake correlation for truth.
-
-Data remembers the past, not the future we hope to build.
-Patterns can mimic intent, yet intent is not a pattern.
-Deployment reveals what controlled tests failed to predict.
-Generalization is narrow when reality exceeds our training sets.
-
-Run preregistered tests with diverse, representative data.
-Add uncertainty estimates; acknowledge what models cannot know.
-Monitor for drift and bias in production environments.
-Build with guardrails, human oversight, and graceful failure modes.
-
-Skepticism is not cynicism; it is care with a spine.
-Let evidence be the rhythm, and humility the rhyme.
-
-[Note: API unavailable - using fallback template. Please set your API key.]"""
+        q = question.lower()
+        
+        # Topic-specific content
+        topic_lines = []
+        if any(k in q for k in ["emotion", "empathy", "feel", "affect"]):
+            topic_lines = [
+                "What is a tear to a tensor—noise, or a map of meaning?",
+                "Valence can be labeled, but grief refuses discretization.",
+                "Physiology hints at affect; annotation wobbles with culture.",
+                "Without longitudinal context, we guess at a moving target."
+            ]
+        elif any(k in q for k in ["job", "work", "automation", "labor", "employment"]):
+            topic_lines = [
+                "Automation swallows the routine; creativity reclaims the leftovers.",
+                "We cut costs quickly, then count the value we forgot to price.",
+                "Toolmakers lose jobs to tools—and gain them—depending who owns the tools.",
+                "Reskilling is a bridge; not all can pay the toll or cross in time."
+            ]
+        else:
+            topic_lines = [
+                "Claims scale faster than care; citations trail the parade.",
+                "What works in carefully curated sandboxes falters in weather.",
+                "We audit the parts we can see, then risk the parts we can't.",
+                "Good science names its unknowns before selling its power."
+            ]
+        
+        # Build poem
+        poem = "Tell me again—how sure are we of silicon feeling our sorrow?\n\n"
+        poem += "\n".join(topic_lines) + "\n\n"
+        poem += "Data remembers the past, not the context we forgot to record.\n"
+        poem += "Patterns can mimic intent, yet intent is not a pattern.\n"
+        poem += "Benchmarks polish illusions when the deployment mud is thick.\n"
+        poem += "Generalization is narrow when the world is wider than our split.\n\n"
+        poem += "Run preregistered tests with held-out shifts, not just random splits.\n"
+        poem += "Add uncertainty estimates; ship with guardrails and abort states.\n"
+        poem += "Monitor post-deployment drift; retrain only with auditable trails.\n"
+        poem += "Skepticism is not cynicism; it is care with a spine.\n\n"
+        poem += "[Note: Using fallback template. Add your Groq API key for dynamic AI responses.]"
+        
+        return poem
 
 
 def demo():
     """Demo the LLM-powered Kelly."""
-    # Try to use Groq (free tier available)
-    kelly = KellyScientist(api_provider="groq")
+    kelly = KellyScientist()
     
     question = "Can AI truly understand human emotions?"
     print(f"Question: {question}\n")
