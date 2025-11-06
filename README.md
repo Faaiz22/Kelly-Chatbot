@@ -1,43 +1,145 @@
-# Kelly — AI Scientist Chatbot
+# Kelly — AI Scientist Chatbot 
 
-A lightweight, dependency-free chatbot that answers **only in poems** with a **skeptical, analytical, and professional** tone.
+A lightweight chatbot powered by **Groq's free LLM API** that answers **only in poems** with a **skeptical, analytical, and professional** tone.
 
 Every poem:
 1. Questions broad claims about AI
 2. Highlights limitations of AI technology
 3. Offers practical, evidence-based suggestions
 
-## Features
+##  New: LLM-Powered!
 
-- 📝 **Template-based poetry generation** - deterministic and reproducible
-- 🔬 **Evidence-based responses** - grounded in AI research limitations
-- ⚖️ **Skeptical tone** - questions hype and marketing claims
-- 🎯 **Topic-aware** - adjusts content based on question keywords
-- 🎨 **Customizable structure** - configure stanzas and lines per stanza
-- 🚀 **Web interface** - interactive Streamlit UI
-- ✅ **Well-tested** - comprehensive unit test suite
+Kelly now uses **Groq's free API** to generate dynamic, context-aware poetic responses instead of templates!
+
+-  **Lightning fast** responses (2-5 seconds)
+-  **Completely free** (~14,400 requests/day)
+-  **Unique poems** for every question
+-  **Truly understands** context and nuance
+-  **Secure** - API key stored only in your session
 
 ## Quick Start
 
-### Web Interface
+### 1. Get Free Groq API Key (30 seconds)
+
+1. Visit https://console.groq.com
+2. Sign up (no credit card required)
+3. Create API key from dashboard
+4. Copy your key (starts with `gsk_`)
+
+### 2. Run the App
 
 ```bash
 # Install dependencies
 pip install -r requirements.txt
 
-# Run the Streamlit app
+# Run Streamlit app
 streamlit run app.py
 ```
 
-### Command Line
+### 3. Enter API Key
+
+Open the Streamlit app in your browser and paste your API key in the sidebar. Start chatting!
+
+## Features
+
+-  **AI-Generated Poetry** - Unique, context-aware poems every time
+-  **Evidence-based responses** - Grounded in AI research limitations
+-  **Skeptical tone** - Questions hype and marketing claims
+-  **Context-aware** - Understands your specific questions
+-  **Customizable structure** - Configure stanzas and lines
+-  **Web interface** - Interactive Streamlit UI
+-  **Privacy-focused** - API key stored only in session
+-  **Fallback mode** - Works without API (basic templates)
+
+## Example
+
+**Input:** "Can AI truly understand human emotions?"
+
+**Kelly's Response:**
+```
+Tell me again—how certain are we that algorithms grasp sorrow?
+What does a neural net know of the weight of grief?
+When loss isn't labeled, when context shifts with culture,
+The model sees patterns, not the person behind the pain.
+
+Sentiment analysis maps valence onto axes we designed,
+But joy and rage aren't points—they're landscapes, moving targets.
+We train on tweets and reviews, then deploy on trauma—
+The gap between data and depth grows wider than we admit.
+
+Without lived experience, correlation mimics understanding,
+Benchmarks rise, yet empathy remains beyond the gradient.
+We confuse prediction with perception, accuracy with insight,
+And forget that feeling isn't just a feature to extract.
+
+Run tests on edge cases where labels blur and context matters.
+Build systems with humility, acknowledging what models miss.
+Let uncertainty be explicit; let human judgment remain central.
+The best AI admits what it cannot know about the heart.
+```
+
+## How It Works
+
+Kelly uses **Groq's LLM API** with a carefully crafted system prompt to ensure every response:
+- Maintains skeptical, analytical tone
+- Questions broad AI claims
+- Highlights specific limitations
+- Provides practical suggestions
+- Follows poetic structure
+
+## Customization
 
 ```python
 from kelly_ai_scientist.kelly import KellyScientist
 
-kelly = KellyScientist()
-poem = kelly.generate("Can AI understand human emotions?")
+# Custom poem structure
+kelly = KellyScientist(
+    api_key="your-groq-key",
+    stanzas=5,
+    lines_per_stanza=3
+)
+
+# Different model
+kelly = KellyScientist(
+    api_key="your-groq-key",
+    model="llama-3.1-8b-instant"  # Faster
+)
+
+# Generate poem
+poem = kelly.generate("How intelligent is AI?")
 print(poem)
 ```
+
+## Available Models
+
+| Model | Speed | Quality | Best For |
+|-------|-------|---------|----------|
+| llama-3.1-70b-versatile | Medium | Highest | Best poems |
+| llama-3.1-8b-instant | Fastest | Good | Quick responses |
+| mixtral-8x7b-32768 | Medium | High | Long context |
+| gemma2-9b-it | Fast | Good | Efficiency |
+
+## Topics Covered
+
+-  AI Emotions & Empathy
+-  Job Automation & Labor
+-  Creativity & Originality  
+-  Consciousness & Sentience
+-  Bias & Fairness
+-  AI Safety & Risks
+-  Intelligence & Reasoning
+-  Future Predictions
+-  Machine Learning
+-  AI Limitations
+- **And any AI-related topic!**
+
+## Why Groq?
+
+-  **Free tier**: ~14,400 requests/day
+-  **Fast**: Responses in 2-5 seconds
+-  **No credit card**: Sign up with email only
+-  **Great models**: Llama 3.1 70B, Mixtral, Gemma
+-  **Reliable**: High uptime, stable API
 
 ## Project Structure
 
@@ -46,69 +148,38 @@ kelly-scientist-bot/
 ├─ app.py                      # Streamlit web interface
 ├─ kelly_ai_scientist/
 │  ├─ __init__.py
-│  └─ kelly.py                 # Core implementation
-├─ tests/
-│  └─ test_kelly.py           # Unit tests
+│  └─ kelly.py                 # Core LLM-powered implementation
 ├─ requirements.txt
+├─ SETUP.md                    # Detailed setup guide
 ├─ LICENSE
 └─ README.md
 ```
 
-## How It Works
+## Privacy & Security
 
-Kelly uses a **template-based system** (not an LLM) to ensure consistent, evidence-based responses:
+ **Your API key is secure:**
+- Stored only in browser session
+- Never logged or saved to disk
+- Not visible to anyone else
+- Cleared when you close browser
 
-1. **Question Analysis**: Extracts keywords to identify topic (emotions, jobs, creativity, etc.)
-2. **Content Selection**: Chooses relevant content blocks from curated pools:
-   - Skeptical openers
-   - Topic-specific analysis
-   - AI limitations
-   - Practical suggestions
-   - Professional closers
-3. **Poem Assembly**: Combines blocks into structured stanzas with proper formatting
+ **Your conversations:**
+- Stored only in session
+- Can be cleared anytime
+- Can be downloaded as JSON
 
-### Example
+## Fallback Mode
 
-**Input:** "Can AI truly understand human emotions?"
-
-**Output:**
-```
-Tell me again—how sure are we of silicon feeling our sorrow?
-
-What is a tear to a tensor—noise, or a map of meaning?
-Valence can be labeled, but grief refuses discretization.
-Physiology hints at affect; annotation wobbles with culture.
-Without longitudinal context, we guess at a moving target.
-
-Data remembers the past, not the context we forgot to record.
-Patterns can mimic intent, yet intent is not a pattern.
-Benchmarks polish illusions when the deployment mud is thick.
-Generalization is narrow when the world is wider than our split.
-
-...
-```
-
-## Customization
-
-```python
-# Change poem structure
-kelly = KellyScientist(stanzas=3, lines_per_stanza=5)
-
-# Add custom suggestions
-poem = kelly.generate(
-    "How do we test AI?",
-    extra_suggestions=["Always validate with real-world data."]
-)
-```
+Don't have an API key? Kelly still works with basic template-based responses! Just run the app without entering a key.
 
 ## Design Philosophy
 
-### Why Template-Based?
+### Why LLM-Powered?
 
-- **Consistency**: Every response includes skepticism, limitations, and practical advice
-- **Transparency**: No black-box LLM - all content is curated and auditable
-- **Reliability**: Deterministic output prevents hallucination or inappropriate content
-- **Educational**: Designed to encourage critical thinking about AI claims
+- **Dynamic**: Every response is unique and context-aware
+- **Intelligent**: True understanding of nuanced questions
+- **Creative**: Generates novel metaphors and insights
+- **Still Skeptical**: System prompt ensures Kelly's personality remains
 
 ### Why Poetry?
 
@@ -117,71 +188,15 @@ poem = kelly.generate(
 - **Engaging**: More interesting than typical chatbot responses
 - **Appropriate**: The constraint mirrors AI's own constraints
 
-## Topics Covered
-
-- 🧠 AI Emotions & Empathy
-- 💼 Job Automation & Labor
-- 🎨 Creativity & Originality  
-- 🤔 Consciousness & Sentience
-- ⚖️ Bias & Fairness
-- 🛡️ AI Safety & Risks
-- 🧩 Intelligence & Reasoning
-- 🔮 Future Predictions
-- 📚 Machine Learning
-- 🚧 AI Limitations
-
-## Testing
-
-Run the test suite:
-
-```bash
-python -m pytest tests/
-# or
-python tests/test_kelly.py
-```
-
-Tests cover:
-- Poem structure and formatting
-- Topic detection and content selection
-- Deterministic output
-- Response quality (skepticism, limitations, practical advice)
-- Edge cases (empty questions, long questions, etc.)
-
-## Development
-
-### Adding New Topics
-
-1. Add keywords to `_topic_specific_blocks()` in `kelly.py`
-2. Add corresponding content blocks
-3. Add tests in `test_kelly.py`
-
-### Adding New Content
-
-Edit the content pools in `kelly.py`:
-- `SKEPTICAL_OPENERS`: Opening lines that question claims
-- `LIMITATIONS_LINES`: Statements about AI limitations
-- `PRACTICAL_SUGGESTIONS`: Evidence-based advice
-- `CLOSERS`: Concluding statements
-
-## Limitations
-
-Kelly herself would want you to know:
-
-- ❌ **Not an LLM**: Uses templates, not generative AI
-- ❌ **Limited knowledge**: Content is curated, not comprehensive
-- ❌ **Topic-dependent**: Best for AI-related questions
-- ❌ **Fixed structure**: Always produces poems in the same format
-- ✅ **By design**: These limitations ensure reliability and consistency
-
 ## Contributing
 
 Contributions welcome! Areas for improvement:
 
-- More topic-specific content blocks
-- Better keyword extraction
-- Additional poem styles
-- Improved web interface
-- More comprehensive tests
+- Additional prompt engineering for better poems
+- More model options
+- Improved error handling
+- Better mobile UI
+- Additional features
 
 ## License
 
@@ -190,10 +205,12 @@ MIT License - see LICENSE file for details
 ## Acknowledgments
 
 Built with:
+- [Groq](https://groq.com/) for lightning-fast LLM inference
 - [Streamlit](https://streamlit.io/) for the web interface
-- Python's `dataclasses` for clean configuration
-- No external AI/ML dependencies (intentionally!)
+- [Llama 3.1](https://ai.meta.com/llama/) models from Meta
 
 ---
 
 **Remember**: Kelly is skeptical by design. She questions bold claims and highlights limitations to encourage critical thinking about AI technology. If you want an AI that agrees with everything you say, Kelly is not that AI. 🤖📊🔬
+
+**Get started in 30 seconds**: Get your [free Groq API key](https://console.groq.com) and start chatting!
