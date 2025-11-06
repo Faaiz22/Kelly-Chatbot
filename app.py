@@ -90,8 +90,6 @@ if 'chat_history' not in st.session_state:
 if 'api_key' not in st.session_state:
     st.session_state.api_key = ""
 
-# --- REMOVED: 'kelly' from session state. We will create it on the fly. ---
-
 # Header
 st.markdown('<div class="main-header">🤖 Kelly - The Skeptical AI Scientist</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-header">Where every answer is a poem, and every claim is questioned (powered by Groq LLM!)</div>', unsafe_allow_html=True)
@@ -123,7 +121,6 @@ with st.sidebar:
     # Update API key
     if api_key_input != st.session_state.api_key:
         st.session_state.api_key = api_key_input
-        # --- REMOVED: Kelly initialization here. ---
     
     # Show API status
     if st.session_state.api_key:
@@ -132,22 +129,12 @@ with st.sidebar:
         st.markdown('<div class="api-status inactive">❌ No API Key - Using Fallback Mode</div>', unsafe_allow_html=True)
         st.warning("⚠️ Without an API key, Kelly will use basic template responses.")
     
-    # Model selection
+    # --- THIS BLOCK IS CHANGED ---
+    # Model selection is removed to prevent 400 errors.
     if st.session_state.api_key:
         st.subheader("Model Settings")
-        selected_model = st.selectbox(
-            "Choose Model",
-            [
-                "llama-3.1-70b-versatile",
-                "llama-3.1-8b-instant",
-                "mixtral-8x7b-32768",
-                "gemma2-9b-it"
-            ],
-            help="Llama 70B is smartest but slower. 8B is fastest.",
-            key="model_selector" # <-- ADDED: Key to read this value
-        )
-        
-        # --- REMOVED: "Update Model" button ---
+        st.info("ℹ️ Using model: `llama-3.1-8b-instant`\n\n(Other models disabled to prevent API errors.)")
+    # --- END OF CHANGE ---
     
     st.divider()
     
@@ -188,14 +175,12 @@ with st.sidebar:
     st.header("Poem Structure")
     stanzas = st.slider(
         "Number of stanzas", 2, 6, 4, 
-        key="stanzas_slider" # <-- ADDED: Key to read this value
+        key="stanzas_slider"
     )
     lines_per_stanza = st.slider(
         "Lines per stanza", 3, 6, 4, 
-        key="lines_slider" # <-- ADDED: Key to read this value
+        key="lines_slider"
     )
-    
-    # --- REMOVED: "Update Structure" button ---
     
     st.divider()
     
@@ -250,7 +235,7 @@ for i, message in enumerate(st.session_state.chat_history):
     else:
         with st.container():
             # Check if the response is an error message
-            if message['content'].startswith("⚠️ Error"):
+            if message['content'].startswith("⚠️"):
                 st.error(message['content'])
             else:
                 st.markdown(f'<div class="poem-box">{message["content"]}</div>', unsafe_allow_html=True)
@@ -285,13 +270,12 @@ if send_button and user_question:
         "timestamp": datetime.now().isoformat()
     })
     
-    # --- ENTIRE LOGIC BLOCK CHANGED ---
     
-    # ALWAYS create a new Kelly instance with the CURRENT settings from the sidebar
-    # This ensures all sidebar changes are applied immediately
+    # --- THIS BLOCK IS CHANGED ---
     
     # Get values from session state using the keys we added
-    current_model = st.session_state.get('model_selector', "llama-3.1-70b-versatile")
+    # The model is now HARD-CODED to the one that works
+    current_model = "llama-3.1-8b-instant"
     current_stanzas = st.session_state.get('stanzas_slider', 4)
     current_lines = st.session_state.get('lines_slider', 4)
 
@@ -299,7 +283,7 @@ if send_button and user_question:
         kelly_instance = KellyScientist(
             api_key=st.session_state.api_key,
             api_provider="groq",
-            model=current_model,
+            model=current_model, # <-- Now locked to llama-3.1-8b-instant
             stanzas=current_stanzas,
             lines_per_stanza=current_lines
         )
@@ -319,12 +303,12 @@ if send_button and user_question:
             # This block will NOW CATCH the error from kelly.py
             response = (
                 f"⚠️ **Error Generating Response:**\n\n`{str(e)}`\n\n"
-                "This often means your Groq API key is invalid or has expired. "
+                "This often means your Groq API key is invalid, expired, or you have network issues. "
                 "Please verify your key in the sidebar and try again."
             )
             # We will add this error to the chat history
     
-
+    # --- END OF CHANGED BLOCK ---
     
     # Add Kelly's response to history
     st.session_state.chat_history.append({
