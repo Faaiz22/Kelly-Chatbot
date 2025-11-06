@@ -21,6 +21,9 @@ st.set_page_config(
 )
 
 # Custom CSS for better styling
+# [Located in app.py]
+
+# Custom CSS for better styling
 st.markdown("""
     <style>
     .main-header {
@@ -45,12 +48,14 @@ st.markdown("""
         line-height: 1.8;
         margin: 1rem 0;
         white-space: pre-line;
+        color: #1E293B; /* <-- ADDED: Dark text for light background */
     }
     .user-message {
         background-color: #EFF6FF;
         padding: 1rem;
         border-radius: 0.5rem;
         margin: 0.5rem 0;
+        color: #1E293B; /* <-- ADDED: Dark text for light background */
     }
     .stButton>button {
         width: 100%;
@@ -75,6 +80,7 @@ st.markdown("""
         padding: 1rem;
         border-radius: 0.5rem;
         margin: 0.5rem 0;
+        color: #1E293B; /* <-- ADDED: Dark text for light background */
     }
     </style>
 """, unsafe_allow_html=True)
