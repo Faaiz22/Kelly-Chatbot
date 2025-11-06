@@ -89,7 +89,7 @@ Remember: You are skeptical by design. Question bold claims, highlight what we d
         }
         
         response = requests.post(url, headers=headers, json=data, timeout=30)
-        response.raise_for_status()
+        response.raise_for_status() # <-- This will raise an error if the API call fails
         return response.json()["choices"][0]["message"]["content"]
     
     def generate(self, question: str, extra_suggestions: Optional[list] = None) -> str:
@@ -102,13 +102,17 @@ Remember: You are skeptical by design. Question bold claims, highlight what we d
         if extra_suggestions:
             prompt += f"\n\nPlease incorporate these suggestions: {', '.join(extra_suggestions)}"
         
+        # --- THIS BLOCK IS CHANGED ---
         try:
             response = self._call_groq(prompt)
             return response.strip()
         
         except Exception as e:
             print(f"Error calling Groq API: {e}")
-            return self._fallback_response(question)
+            # RE-RAISE the exception so the Streamlit app (app.py) can
+            # catch it and display a user-friendly error message.
+            raise e
+        # --- END OF CHANGE ---
     
     def _fallback_response(self, question: str) -> str:
         """Fallback template-based response when API is unavailable."""
