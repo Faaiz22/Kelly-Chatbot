@@ -20,10 +20,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for better styling
-# [Located in app.py]
-
-# Custom CSS for better styling
+# Custom CSS for better styling (with dark mode color fixes)
 st.markdown("""
     <style>
     .main-header {
@@ -93,8 +90,7 @@ if 'chat_history' not in st.session_state:
 if 'api_key' not in st.session_state:
     st.session_state.api_key = ""
 
-if 'kelly' not in st.session_state:
-    st.session_state.kelly = None
+# --- REMOVED: 'kelly' from session state. We will create it on the fly. ---
 
 # Header
 st.markdown('<div class="main-header">🤖 Kelly - The Skeptical AI Scientist</div>', unsafe_allow_html=True)
@@ -127,11 +123,7 @@ with st.sidebar:
     # Update API key
     if api_key_input != st.session_state.api_key:
         st.session_state.api_key = api_key_input
-        if api_key_input:
-            st.session_state.kelly = KellyScientist(
-                api_key=api_key_input,
-                api_provider="groq"
-            )
+        # --- REMOVED: Kelly initialization here. ---
     
     # Show API status
     if st.session_state.api_key:
@@ -151,16 +143,11 @@ with st.sidebar:
                 "mixtral-8x7b-32768",
                 "gemma2-9b-it"
             ],
-            help="Llama 70B is smartest but slower. 8B is fastest."
+            help="Llama 70B is smartest but slower. 8B is fastest.",
+            key="model_selector" # <-- ADDED: Key to read this value
         )
         
-        if st.button("🔄 Update Model"):
-            st.session_state.kelly = KellyScientist(
-                api_key=st.session_state.api_key,
-                api_provider="groq",
-                model=selected_model
-            )
-            st.success(f"Updated to {selected_model}")
+        # --- REMOVED: "Update Model" button ---
     
     st.divider()
     
@@ -199,23 +186,16 @@ with st.sidebar:
     
     # Poem structure settings
     st.header("Poem Structure")
-    stanzas = st.slider("Number of stanzas", 2, 6, 4)
-    lines_per_stanza = st.slider("Lines per stanza", 3, 6, 4)
+    stanzas = st.slider(
+        "Number of stanzas", 2, 6, 4, 
+        key="stanzas_slider" # <-- ADDED: Key to read this value
+    )
+    lines_per_stanza = st.slider(
+        "Lines per stanza", 3, 6, 4, 
+        key="lines_slider" # <-- ADDED: Key to read this value
+    )
     
-    if st.button("Update Structure"):
-        if st.session_state.api_key:
-            st.session_state.kelly = KellyScientist(
-                stanzas=stanzas,
-                lines_per_stanza=lines_per_stanza,
-                api_key=st.session_state.api_key,
-                api_provider="groq"
-            )
-        else:
-            st.session_state.kelly = KellyScientist(
-                stanzas=stanzas,
-                lines_per_stanza=lines_per_stanza
-            )
-        st.success("Poem structure updated!")
+    # --- REMOVED: "Update Structure" button ---
     
     st.divider()
     
@@ -269,7 +249,11 @@ for i, message in enumerate(st.session_state.chat_history):
             st.markdown(f'<div class="user-message"><strong>You:</strong> {message["content"]}</div>', unsafe_allow_html=True)
     else:
         with st.container():
-            st.markdown(f'<div class="poem-box">{message["content"]}</div>', unsafe_allow_html=True)
+            # Check if the response is an error message
+            if message['content'].startswith("⚠️ Error"):
+                st.error(message['content'])
+            else:
+                st.markdown(f'<div class="poem-box">{message["content"]}</div>', unsafe_allow_html=True)
 
 # Input area
 user_question = st.text_input(
@@ -301,23 +285,46 @@ if send_button and user_question:
         "timestamp": datetime.now().isoformat()
     })
     
-    # Initialize Kelly if not already done
-    if st.session_state.kelly is None:
-        if st.session_state.api_key:
-            st.session_state.kelly = KellyScientist(
-                api_key=st.session_state.api_key,
-                api_provider="groq"
-            )
-        else:
-            st.session_state.kelly = KellyScientist()
+    # --- ENTIRE LOGIC BLOCK CHANGED ---
+    
+    # ALWAYS create a new Kelly instance with the CURRENT settings from the sidebar
+    # This ensures all sidebar changes are applied immediately
+    
+    # Get values from session state using the keys we added
+    current_model = st.session_state.get('model_selector', "llama-3.1-70b-versatile")
+    current_stanzas = st.session_state.get('stanzas_slider', 4)
+    current_lines = st.session_state.get('lines_slider', 4)
+
+    if st.session_state.api_key:
+        kelly_instance = KellyScientist(
+            api_key=st.session_state.api_key,
+            api_provider="groq",
+            model=current_model,
+            stanzas=current_stanzas,
+            lines_per_stanza=current_lines
+        )
+    else:
+        # Initialize in fallback mode if no API key
+        kelly_instance = KellyScientist(
+            stanzas=current_stanzas,
+            lines_per_stanza=current_lines
+        )
     
     # Generate Kelly's response
     with st.spinner("Kelly is composing her poetic response..."):
         try:
-            response = st.session_state.kelly.generate(user_question)
+            response = kelly_instance.generate(user_question)
+            
         except Exception as e:
-            response = f"⚠️ Error generating response: {str(e)}\n\nPlease check your API key and try again."
-            st.error(f"Error: {str(e)}")
+            # This block will NOW CATCH the error from kelly.py
+            response = (
+                f"⚠️ **Error Generating Response:**\n\n`{str(e)}`\n\n"
+                "This often means your Groq API key is invalid or has expired. "
+                "Please verify your key in the sidebar and try again."
+            )
+            # We will add this error to the chat history
+    
+
     
     # Add Kelly's response to history
     st.session_state.chat_history.append({
